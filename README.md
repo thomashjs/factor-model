@@ -46,6 +46,7 @@ All regressions are estimated as time-series regressions for each portfolio usin
 ## Repository Structure
     .
     ├── src/ # Data pipelines, regressions, and plotting scripts
+    ├── tests/ # Correctness tests
     ├── notebooks/ # Exploratory analysis and sanity checks
     ├── reports/ # Regression outputs and written interpretation
     ├── figures/ # Generated plots

@@ -39,9 +39,9 @@ def main():
     factors = pd.read_parquet(root / "data/processed/factors_monthly.parquet")
 
     df = ports.merge(factors, on="date", how="inner").dropna()
-    ret_cols = [c for c in ports.columns if c != "date"]
+    ret_cols = [c for c in ports.columns if c != "date"] # list of 25 portfolio return columns
 
-    results = [run_one(df, c) for c in ret_cols]
+    results = [run_one(df, c) for c in ret_cols] # run regression for each portfolio, store in list of dicts
     out = pd.DataFrame(results).sort_values("portfolio")
 
     reports = root / "reports"
