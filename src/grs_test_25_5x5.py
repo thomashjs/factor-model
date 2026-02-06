@@ -1,17 +1,17 @@
 """
 GRS joint alpha test for the 25 Size-B/M (5x5) portfolios.
 
-Produces one report with both FF3 and Carhart.
+Produces a report on both FF3 and Carhart.
 
-Reads:
+Inputs:
   data/processed/portfolios_25_5x5_monthly.parquet
   data/processed/factors_monthly.parquet
 
-Writes:
+Outputs:
   reports/grs_test.md
 
-Implements the classic Gibbons-Ross-Shanken (1989) F-test using OLS residual
-covariance (no HAC). This is the standard baseline used in many empirical papers.
+Implements the Gibbons-Ross-Shanken (1989) F-test using OLS residual
+covariance (no HAC).
 """
 
 from __future__ import annotations
@@ -40,13 +40,6 @@ class GRSResult:
     K: int
     F_stat: float
     p_value: float | None
-
-
-def _to_datetime(s: pd.Series) -> pd.Series:
-    if np.issubdtype(s.dtype, np.datetime64):
-        return s
-    return pd.to_datetime(s)
-
 
 def _ols_alphas_resids(Y: np.ndarray, F: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
     """
@@ -78,13 +71,12 @@ def grs_test(
     model_name: str,
 ) -> GRSResult:
     """
-    Classic GRS F-test:
+    GRS F-test:
       F = ((T - N - K)/N) * (1 + mu_f' Sigma_f^{-1} mu_f)^{-1} * alpha' Sigma_e^{-1} alpha
 
     where Sigma_e is the residual covariance from the system of time-series regressions.
     """
     d = df.copy()
-    d["date"] = _to_datetime(d["date"])
     d = d.sort_values("date").dropna(subset=list(ret_cols) + factor_cols + ["RF"])
 
     # Excess returns (T, N)
