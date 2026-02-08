@@ -24,4 +24,7 @@ This report tests whether the 25 portfolio alphas are jointly zero under each mo
 
 ## Interpretation
 
-Lower GRS statistics / higher p-values indicate the model's alphas are closer to jointly zero across the 25 portfolios. Comparing FF3 vs Carhart tells you whether adding Momentum materially reduces joint mispricing for these portfolios.
+Lower GRS statistics/higher p-values indicate that alphas are jointly closer to zero across the 25 portfolios. Comparing FF3 and Carhart assesses whether the inclusion of the momentum factor reduces joint mispricing.
+
+For the FF3 model, the GRS test rejects the null of jointly zero alphas at conventional significance levels (suggesting at least one non-zero alpha) based on evidence, indicating cross-sectional mispricing across the 25 portfolios.
+Relative to FF3, the Carhart model exhibits a lower GRS statistic and a higher p-value, suggesting that the inclusion of momentum mitigates joint mispricing, despite still rejected by GRS.

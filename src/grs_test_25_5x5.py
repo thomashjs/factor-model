@@ -10,6 +10,9 @@ Inputs:
 Outputs:
   reports/grs_test.md
 
+Caution:
+  Do not run after markdown is written and manually edited, as this will overwrite the report.
+  
 Implements the Gibbons-Ross-Shanken (1989) F-test using OLS residual
 covariance (no HAC).
 """
@@ -33,13 +36,13 @@ except Exception:
 class GRSResult:
     model_name: str
     factors: List[str]
-    start: str
-    end: str
-    T: int
-    N: int
-    K: int
-    F_stat: float
-    p_value: float | None
+    start: str                             # start date
+    end: str                               # end date
+    T: int                                 # number of time periods
+    N: int                                 # number of assets
+    K: int                                 # number of factors
+    F_stat: float                          # GRS F-statistic
+    p_value: float | None                  # p-value
 
 def _ols_alphas_resids(Y: np.ndarray, F: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
     """
@@ -168,9 +171,9 @@ def write_report(out_path: Path, results: List[GRSResult]) -> None:
         lines.append("## Interpretation")
         lines.append("")
         lines.append(
-            "Lower GRS statistics / higher p-values indicate the model's alphas are closer to jointly zero "
-            "across the 25 portfolios. Comparing FF3 vs Carhart tells you whether adding Momentum materially "
-            "reduces joint mispricing for these portfolios."
+            "Lower GRS statistics/higher p-values indicate that alphas are jointly closer to zero "
+            "across the 25 portfolios. Comparing FF3 and Carhart assesses whether the inclusion of "
+            "the momentum factor reduces joint mispricing."
         )
         lines.append("")
 
