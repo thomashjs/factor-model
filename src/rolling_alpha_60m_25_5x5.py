@@ -12,11 +12,13 @@ Writes:
   reports/rolling_alpha_60m_summary.csv
 
 Notes:
-- Rolling t-stats here use classic OLS (no HAC) for speed/stability in short windows.
+- Rolling t-stats here use classic OLS for speed/stability in short windows.
 """
 
 from __future__ import annotations
 
+from logging import root
+from logging import root
 from pathlib import Path
 import numpy as np
 import pandas as pd
@@ -24,6 +26,7 @@ import matplotlib.pyplot as plt
 
 
 def _ols_alpha_tstat(Y: np.ndarray, F: np.ndarray) -> tuple[float, float]:
+    # can optimize by doing Multiple Linear Regression, but this is fast enough for 25 assets.
     """
     Single-asset OLS with intercept.
     Y: (T,) excess returns
@@ -74,6 +77,50 @@ def rolling_alphas(
 
     return pd.DataFrame(out, columns=["date", "portfolio", "alpha", "t_alpha"])
 
+# Plot mean alpha over time for given model with 95% CI
+def plot_rolling_alphas(summ: pd.DataFrame, model_name: str, root: Path) -> None:
+    model_summ = summ[summ["model"] == model_name]
+    plt.figure()
+    plt.plot(model_summ["date"], model_summ["mean_alpha"], label="Mean α")
+    plt.fill_between(
+        model_summ["date"],
+        model_summ["ci_low"],
+        model_summ["ci_high"],
+        alpha=0.25,
+        label="95% CI"
+    )
+
+    plt.title(f"60-month rolling mean alpha ({model_name}) across 25 portfolios")
+    plt.axhline(0, color="gray", linestyle="--", linewidth=1)
+    plt.xlabel("Date")
+    plt.ylabel("Mean alpha")
+    plt.legend()
+    plt.tight_layout()
+    plt.savefig(root / f"figures/rolling_alpha_{model_name.lower()}.png", dpi=200)
+    plt.close()
+
+    print(f"Wrote figures/rolling_alpha_{model_name.lower()}.png")
+
+# Plot mean |alpha| over time for given model
+def plot_rolling_alpha_abs(summ, model_name, root) -> None:
+    plt.figure()
+    model_summ = summ[summ["model"] == model_name]
+    plt.plot(model_summ["date"], model_summ["mean_abs_alpha"])
+    idx_min = (model_summ["mean_abs_alpha"]).idxmin()
+    date_min = model_summ.loc[idx_min, "date"]
+    val_min = model_summ.loc[idx_min, "mean_abs_alpha"]
+
+    plt.scatter(date_min, val_min)
+    plt.annotate(f"mean |α| = {val_min:.3f}", (date_min, val_min))
+
+    plt.title(f"60-month rolling mean |alpha| across 25 portfolios ({model_name})")
+    plt.xlabel("Date")
+    plt.ylabel("Mean |alpha|")
+    plt.tight_layout()
+    plt.savefig(root / f"figures/rolling_alpha_abs_{model_name.lower()}.png", dpi=200)
+    plt.close()
+
+    print(f"Wrote figures/rolling_alpha_abs_{model_name.lower()}.png")
 
 def main() -> None:
     root = Path(__file__).resolve().parents[1]
@@ -83,9 +130,8 @@ def main() -> None:
     ports = pd.read_parquet(ports_path)
     factors = pd.read_parquet(factors_path)
 
-    # defensive: ensure datetime + inner-merge
     ports["date"] = pd.to_datetime(ports["date"])
-    factors["date"] = pd.to_datetime(factors["date"])
+    factors["date"] = pd.to_datetime(factors["date"]) # ensure datetime in case not already
 
     df = ports.merge(factors, on="date", how="inner")
 
@@ -105,6 +151,7 @@ def main() -> None:
     summ = (
         roll.groupby(["model", "date"])
         .agg(
+            mean_alpha=("alpha", "mean"),
             mean_abs_alpha=("alpha", lambda x: float(np.mean(np.abs(x)))),
             std_alpha=("alpha", lambda x: float(np.std(x, ddof=1))),
             frac_sig_5pct=("t_alpha", lambda x: float(np.mean(np.abs(x) > 1.96))),
@@ -113,35 +160,29 @@ def main() -> None:
         .reset_index()
         .sort_values(["model", "date"])
     )
+    
+    # Standard error of cross-sectional mean
+    N = len(ret_cols)
+    # 95% CI (t = 1.96): population mean +- t*SE/sqrt(N)
+    summ["se_mean_alpha"] = summ["std_alpha"] / np.sqrt(N)
+    summ["ci_low"] = summ["mean_alpha"] - 1.96 * summ["se_mean_alpha"] 
+    summ["ci_high"] = summ["mean_alpha"] + 1.96 * summ["se_mean_alpha"]
 
     (root / "reports").mkdir(parents=True, exist_ok=True)
     summ.to_csv(root / "reports/rolling_alpha_60m_summary.csv", index=False)
+    print("Wrote reports/rolling_alpha_60m_summary.csv")
 
     (root / "figures").mkdir(parents=True, exist_ok=True)
 
-    # Plot 1: mean |alpha| over time (FF3)
+    # Plot mean alpha with CI and mean |alpha| over time for each model
+    plot_rolling_alphas(summ, "FF3", root)
+    plot_rolling_alpha_abs(summ, "FF3", root)
+    plot_rolling_alphas(summ, "Carhart", root)
+    plot_rolling_alpha_abs(summ, "Carhart", root)
+    
+    # Plot dispersion comparison (std of alpha)
     ff3_s = summ[summ["model"] == "FF3"]
-    plt.figure()
-    plt.plot(ff3_s["date"], ff3_s["mean_abs_alpha"])
-    plt.title("60-month rolling mean |alpha| (FF3) across 25 portfolios")
-    plt.xlabel("Date")
-    plt.ylabel("Mean |alpha|")
-    plt.tight_layout()
-    plt.savefig(root / "figures/rolling_alpha_ff3.png", dpi=200)
-    plt.close()
-
-    # Plot 2: mean |alpha| over time (Carhart)
     car_s = summ[summ["model"] == "Carhart"]
-    plt.figure()
-    plt.plot(car_s["date"], car_s["mean_abs_alpha"])
-    plt.title("60-month rolling mean |alpha| (Carhart) across 25 portfolios")
-    plt.xlabel("Date")
-    plt.ylabel("Mean |alpha|")
-    plt.tight_layout()
-    plt.savefig(root / "figures/rolling_alpha_carhart.png", dpi=200)
-    plt.close()
-
-    # Plot 3: dispersion comparison (std of alpha)
     plt.figure()
     plt.plot(ff3_s["date"], ff3_s["std_alpha"], label="FF3")
     plt.plot(car_s["date"], car_s["std_alpha"], label="Carhart")
@@ -153,7 +194,7 @@ def main() -> None:
     plt.savefig(root / "figures/rolling_alpha_dispersion.png", dpi=200)
     plt.close()
 
-    print("Wrote figures/rolling_alpha_*.png and reports/rolling_alpha_60m_summary.csv")
+    print("Wrote figures/rolling_alpha_dispersion.png")
 
 
 if __name__ == "__main__":
