@@ -1,45 +1,35 @@
-# Fama–French and Carhart Factor Model Replication
+# Fama–French and Carhart Factor Model Empirical Analysis
 
-This project replicates and compares the Fama–French three-factor (FF3) model and the Carhart four-factor (FF3 + Momentum) model using the 25 Size–Book-to-Market portfolios from the Kenneth French Data Library.
+This project replicates and evaluates the Fama–French 3-Factor (FF3) and Carhart 4-Factor models using the 25 Size–Book-to-Market portfolios from the Kenneth French Data Library.
 
-The goal is to examine how the inclusion of the momentum factor affects estimated abnormal returns (alphas) and model fit across portfolios.
-
----
-
-## Research Question
-
-- How do portfolio alphas change when moving from FF3 to the Carhart model?
-- Does momentum explain systematic return variation not captured by FF3?
-- Which portfolios are most affected by the inclusion of momentum?
+The analysis goes beyond replication to assess:
+- Joint pricing restrictions (GRS test)
+- Time-series stability (rolling regressions)
+- Regime robustness (pre/post 2009 and post-2020 splits)
+- Regression diagnostics (HAC vs OLS, residual autocorrelation)
 
 ---
 
 ## Data
 
-All data are sourced from the **Kenneth French Data Library**:
+Source: **Kenneth French Data Library**:
 
 - FF3 monthly factors (Mkt–RF, SMB, HML, RF)
 - Momentum factor (Mom)
 - 25 Size–Book-to-Market portfolio monthly returns
 
-Raw data are downloaded programmatically and processed locally.  
-Processed data files are **not committed** to the repository and are reproducible via the provided scripts.
+Data are downloaded programmatically and fully reproducible via scripts in src/. Processed data are not committed.
 
 ---
 
-## Models
+## Methodology
 
-### Fama–French 3-Factor Model
-Excess returns are regressed on:
-- Market excess return (Mkt–RF)
-- Size factor (SMB)
-- Value factor (HML)
-
-### Carhart 4-Factor Model
-Extends FF3 by adding:
-- Momentum factor (Mom)
-
-All regressions are estimated as time-series regressions for each portfolio using **Newey–West (HAC) standard errors** with 3 lags.
+- Time-series regressions per portfolio
+- Newey–West (HAC) standard errors (3 lags for baseline regressions; 12 lags for diagnostic checks)
+- GRS joint alpha test
+- 60-month rolling regressions
+- Two-period and three-period regime splits
+- Residual autocorrelation diagnostics
 
 ---
 
@@ -56,53 +46,63 @@ All regressions are estimated as time-series regressions for each portfolio usin
     └── README.md
 
 ---
+## Key Findings
 
-## Key Outputs
+- The GRS test rejects joint zero alphas under both models, but Carhart reduces cross-sectional mispricing relative to FF3.
 
-- `reports/ff3_25_5x5_results.csv`  
-  FF3 regression results for all 25 portfolios
+- The fraction of significant alphas declines from **36% (FF3)** to **24% (Carhart)**.
 
-- `reports/carhart_25_5x5_results.csv`  
-  Carhart regression results for all 25 portfolios
+- Rolling regressions show no persistent structural drift in mean alpha.
 
-- `reports/ff3_vs_carhart_comparison.csv`  
-  Clean comparison table with alphas and ΔR²
+- Pricing errors are largest pre-2009 and more stable post-crisis.
 
-- `reports/comparison_ff3_vs_carhart.md`  
-  Written interpretation of the results
+- Residual autocorrelation is present (~64% of portfolios), but HAC adjustments do not materially inflate standard errors.
 
-- `figures/alpha_ff3_vs_carhart.png`  
-  Scatter plot of FF3 vs. Carhart alphas
-
-- `figures/delta_r2_by_portfolio.png`  
-  Change in R² by portfolio after adding momentum
+**Conclusion**:
+Momentum provides economically meaningful incremental explanatory power, improving stability and reducing pricing errors, though neither model fully eliminates mispricing.
 
 ---
 
-## Main Findings (Summary)
+## Key Outputs
 
-- FF3 alphas generally shrink toward zero after adding the momentum factor.
-- Momentum loadings are frequently statistically significant in the Carhart model.
-- The reduction in FF3 alphas is systematic and strongest for portfolios with high momentum exposure.
-- Increases in R² are mechanical but indicate that momentum explains additional variation in returns.
+- Portfolio-level regression results (reports/*_results.csv)
+- FF3 vs Carhart comparison tables
+- GRS joint test results
+- Rolling alpha visualizations
+- Regime stability analysis
+- Diagnostic summary tables
 
-These results are consistent with the core findings of Carhart (1997) and highlight the importance of momentum as an additional factor in asset pricing.
+<!--
+---
+
+## Robustness and Diagnostic Summary
+
+We conduct a series of joint, time-series, and regime-based robustness checks to evaluate the pricing performance and statistical reliability of the Fama–French 3-factor (FF3) and Carhart 4-factor models across the 25 Size–Book-to-Market portfolios.
+
+The Gibbons–Ross–Shanken (GRS) test rejects the joint null of zero alphas under both models, indicating the presence of cross-sectional pricing errors. However, the Carhart specification exhibits a lower GRS statistic and higher p-value relative to FF3, suggesting that the inclusion of the momentum factor reduces joint mispricing.
+
+Rolling 60-month regressions show that mean cross-sectional alpha remains centered near zero over time for both models, with no persistent structural drift. Confidence bands for the cross-sectional mean alpha indicate that pricing errors fluctuate but do not exhibit sustained directional bias. Dispersion of alphas declines in the post-2009 regime relative to the pre-crisis period, consistent with improved stability in the cross-section.
+
+Split-sample analysis further supports this pattern. Mean alphas are economically larger and more dispersed in the pre-2009 period, while both models display improved pricing performance in 2009–2019. Across regimes, the Carhart model consistently yields mean alphas closer to zero and a lower fraction of statistically significant pricing errors, indicating incremental explanatory power from momentum. In the full sample, the fraction of significant alphas declines from 36% under FF3 to 24% under Carhart.
+
+Regression diagnostics indicate that residual autocorrelation is present in a majority of portfolios (≈64%), justifying the use of Newey–West HAC standard errors. However, HAC-adjusted standard errors are close in magnitude to OLS estimates (mean HAC/OLS ratio ≈ 0.93–0.97), suggesting that serial dependence does not materially distort inference.
+
+Overall, while neither model fully eliminates cross-sectional pricing errors, the Carhart specification demonstrates improved stability and reduced mispricing relative to FF3, particularly in the pre-crisis regime. The combined evidence from joint tests, rolling estimation, regime splits, and diagnostic checks supports the conclusion that momentum provides economically meaningful, though incomplete, incremental explanatory power in this cross-section. -->
+---
+
+## Technical Stack
+Python | pandas | NumPy | statsmodels | matplotlib
 
 ---
 
 ## Reproducibility
 
-To reproduce the analysis:
+```
+pip install -r requirements.txt
+python -m src.<script_name>
+```
 
-1. Create and activate a Python virtual environment
-2. Install dependencies from `requirements.txt`
-3. Run scripts in `src/` in logical order:
-   - factor download and processing
-   - portfolio return construction
-   - FF3 and Carhart regressions
-   - comparison and plotting scripts
-
-All results can be regenerated from source.
+All results can be reproduced from raw data.
 
 ---
 

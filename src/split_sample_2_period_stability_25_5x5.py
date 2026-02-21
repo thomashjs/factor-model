@@ -1,6 +1,10 @@
 """
 Split-sample stability for 25 Size-B/M portfolios.
 
+Inputs:
+  rewrite_csv: bool = False   # if True, overwrite the CSV report
+  rewrite_md: bool = False    # if True, overwrite the markdown report
+
 Reads:
   data/processed/portfolios_25_5x5_monthly.parquet
   data/processed/factors_monthly.parquet
@@ -46,7 +50,7 @@ def evaluate_period(df, ret_cols, factor_cols, model_name, label):
     return result
 
 
-def main():
+def main(rewrite_csv=False, rewrite_md=False):
     root = Path(__file__).resolve().parents[1]
     ports = pd.read_parquet(root / "data/processed/portfolios_25_5x5_monthly.parquet")
     factors = pd.read_parquet(root / "data/processed/factors_monthly.parquet")
@@ -68,7 +72,7 @@ def main():
     all_results = []
 
     for label, dsub in splits.items():
-        if len(dsub) < 80:
+        if len(dsub) < 60:
             continue
 
         all_results.append(
@@ -91,8 +95,11 @@ def main():
         .reset_index()
     )
 
-    (root / "reports").mkdir(parents=True, exist_ok=True)
-    res.to_csv(root / "reports/split_sample_2_period_stability.csv", index=False)
+    if rewrite_csv:
+        (root / "reports").mkdir(parents=True, exist_ok=True)
+        res.to_csv(root / "reports/split_sample_2_period_stability.csv", index=False)
+    else:
+        print("CSV report not rewritten (rewrite_csv=False).")
 
     # Markdown report
     lines = []
@@ -115,11 +122,13 @@ def main():
         "in later subsamples."
     )
 
-    (root / "reports/split_sample_2_period_stability.md").write_text(
-        "\n".join(lines), encoding="utf-8"
-    )
-
-    print("Wrote reports/split_sample_2_period_stability.*")
+    if rewrite_md:
+        (root / "reports/split_sample_2_period_stability.md").write_text(
+            "\n".join(lines), encoding="utf-8"
+        )
+        print("Wrote reports/split_sample_2_period_stability.*")
+    else:
+        print("Markdown report not rewritten (rewrite_md=False).")
 
 if __name__ == "__main__":
     main()

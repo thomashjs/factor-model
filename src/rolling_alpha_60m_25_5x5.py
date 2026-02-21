@@ -80,6 +80,7 @@ def rolling_alphas(
 # Plot mean alpha over time for given model with 95% CI
 def plot_rolling_alphas(summ: pd.DataFrame, model_name: str, root: Path) -> None:
     model_summ = summ[summ["model"] == model_name]
+    model_summ = model_summ.sort_values("date")
     plt.figure()
     plt.plot(model_summ["date"], model_summ["mean_alpha"], label="Mean α")
     plt.fill_between(
@@ -90,8 +91,9 @@ def plot_rolling_alphas(summ: pd.DataFrame, model_name: str, root: Path) -> None
         label="95% CI"
     )
 
+    plt.grid(alpha=0.2)
     plt.title(f"60-month rolling mean alpha ({model_name}) across 25 portfolios")
-    plt.axhline(0, color="gray", linestyle="--", linewidth=1)
+    plt.axhline(0, color="black", linewidth=1)
     plt.xlabel("Date")
     plt.ylabel("Mean alpha")
     plt.legend()
@@ -105,14 +107,18 @@ def plot_rolling_alphas(summ: pd.DataFrame, model_name: str, root: Path) -> None
 def plot_rolling_alpha_abs(summ, model_name, root) -> None:
     plt.figure()
     model_summ = summ[summ["model"] == model_name]
+    model_summ = model_summ.sort_values("date")
     plt.plot(model_summ["date"], model_summ["mean_abs_alpha"])
-    idx_min = (model_summ["mean_abs_alpha"]).idxmin()
-    date_min = model_summ.loc[idx_min, "date"]
-    val_min = model_summ.loc[idx_min, "mean_abs_alpha"]
 
-    plt.scatter(date_min, val_min)
-    plt.annotate(f"mean |α| = {val_min:.3f}", (date_min, val_min))
+    if not model_summ["mean_abs_alpha"].isna().all():           # defensive check
+        idx_min = (model_summ["mean_abs_alpha"]).idxmin()
+        date_min = model_summ.loc[idx_min, "date"]
+        val_min = model_summ.loc[idx_min, "mean_abs_alpha"]
 
+        plt.scatter(date_min, val_min)
+        plt.annotate(f"mean |α| = {val_min:.3f}", (date_min, val_min))
+    
+    plt.grid(alpha=0.2)
     plt.title(f"60-month rolling mean |alpha| across 25 portfolios ({model_name})")
     plt.xlabel("Date")
     plt.ylabel("Mean |alpha|")
