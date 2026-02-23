@@ -16,7 +16,7 @@
 - Mean |OOS alpha| (mean residual): 0.000774291
 
 ### Interpretation
-Lower MAE/RMSE indicates improved out-of-sample pricing. Reduced dispersion of mean residuals suggests alphas are closer to zero across portfolios.
+Expanding-window walk-forward validation shows no economically meaningful difference in out-of-sample pricing errors between FF3 and Carhart. The incremental momentum factor does not materially improve OOS pricing of the 25 Size–Book-to-Market portfolios, suggesting limited incremental stability benefit at the portfolio-test level.
 
 ### Files
 - oos_walkforward_25_5x5_by_portfolio.csv

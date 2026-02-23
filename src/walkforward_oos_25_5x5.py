@@ -48,7 +48,7 @@ def walkforward_oos(
     burn_in: int = 120,
 ) -> pd.DataFrame:
     """
-    Returns tidy OOS residuals with columns:
+    Returns OOS residuals with columns:
       date, portfolio, model, y, yhat, resid
     where each row is a 1-step-ahead prediction at date t using params fit on < t.
     """
