@@ -53,7 +53,8 @@ def run_fama_macbeth(signal: pd.DataFrame,
 def build_deciles(signal: pd.DataFrame,
                   returns: pd.DataFrame,
                   n_deciles: int = 10,
-                  min_obs: int = 100):
+                  min_obs: int = 100,
+                  winsorize: list = [0.01,0.99]):
 
     wml_series = []
 
@@ -64,11 +65,11 @@ def build_deciles(signal: pd.DataFrame,
             "signal": signal.loc[date]
         }).dropna()
 
-        df["ret"] = df["ret"].clip(lower=df["ret"].quantile(0.01),
-                           upper=df["ret"].quantile(0.99))
-        
         if len(df) < min_obs:
             continue
+
+        df["ret"] = df["ret"].clip(lower=df["ret"].quantile(winsorize[0]),
+                           upper=df["ret"].quantile(winsorize[1]))
         
         df["decile"] = pd.qcut(
             df["signal"],
